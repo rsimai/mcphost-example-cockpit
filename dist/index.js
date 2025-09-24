@@ -28740,6 +28740,8 @@
     const [input, setInput] = (0, import_react2.useState)("");
     const [output, setOutput] = (0, import_react2.useState)("");
     const [process2, setProcess] = (0, import_react2.useState)(null);
+    const [isReady, setIsReady] = (0, import_react2.useState)(false);
+    const [toolRequest, setToolRequest] = (0, import_react2.useState)(null);
     const outputRef = (0, import_react2.useRef)(null);
     (0, import_react2.useEffect)(() => {
       const proc = cockpit_default.spawn(
@@ -28753,8 +28755,24 @@
       setProcess(proc);
       let stdoutBuffer = "";
       const handleMessage = (msg) => {
-        if (msg.msg_type === "chunk") {
+        if (msg.msg_type === "ready") {
+          setIsReady(true);
+        } else if (msg.msg_type === "chunk") {
           setOutput((prev) => prev + msg.content);
+        } else if (msg.msg_type === "confirm-tool-run") {
+          setOutput((prev) => prev + `
+[TOOL]: ${msg.content}
+`);
+          setToolRequest(msg.content);
+        } else if (msg.msg_type === "tool-result-ok") {
+          setOutput((prev) => prev + `[TOOL OK]: ${msg.content}
+`);
+        } else if (msg.msg_type === "tool-result-failed") {
+          setOutput((prev) => prev + `[TOOL FAILED]: ${msg.content}
+`);
+        } else if (msg.msg_type === "tool-result-canceled") {
+          setOutput((prev) => prev + `[TOOL CANCELED]: ${msg.content}
+`);
         }
       };
       proc.stream((data) => {
@@ -28782,7 +28800,7 @@
       }
     }, [output]);
     const sendMessage = () => {
-      if (!input.trim() || !process2) return;
+      if (!input.trim() || !process2 || !isReady) return;
       const userInput = input.trim();
       const msg = {
         msg_type: "prompt",
@@ -28792,13 +28810,25 @@
       setOutput((prev) => prev + `
 > ${userInput}
 `);
-      process2.input(jsonMsg);
+      process2.input(jsonMsg, true);
       setInput("");
+      setIsReady(false);
     };
     const handleKeyPress = (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         sendMessage();
+      }
+    };
+    const handleToolResponse = (allow) => {
+      if (process2 && toolRequest) {
+        const msgType = allow ? "allow-tool-run" : "deny-tool-run";
+        const msg = { msg_type: msgType, content: "" };
+        const jsonMsg = JSON.stringify(msg) + "\n";
+        process2.input(jsonMsg, true);
+        setOutput((prev) => prev + `[${allow ? "ALLOWED" : "DENIED"}] Tool execution
+`);
+        setToolRequest(null);
       }
     };
     return /* @__PURE__ */ import_react2.default.createElement(Stack, { hasGutter: true }, /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Title, { headingLevel: "h1" }, _("Local MCP"))), /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, { grow: { default: "grow" } }, /* @__PURE__ */ import_react2.default.createElement(
@@ -28809,7 +28839,7 @@
         onKeyPress: handleKeyPress,
         placeholder: _("Enter your message...")
       }
-    )), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { onClick: sendMessage, disabled: !process2 }, _("Send"))))), /* @__PURE__ */ import_react2.default.createElement(StackItem, { isFilled: true }, /* @__PURE__ */ import_react2.default.createElement(
+    )), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { onClick: sendMessage, disabled: !process2 || !isReady }, _("Send"))))), toolRequest && /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("span", null, _("Allow tool execution?"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "primary", onClick: () => handleToolResponse(true) }, _("Yes"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "secondary", onClick: () => handleToolResponse(false) }, _("No"))))), /* @__PURE__ */ import_react2.default.createElement(StackItem, { isFilled: true }, /* @__PURE__ */ import_react2.default.createElement(
       TextArea,
       {
         ref: outputRef,

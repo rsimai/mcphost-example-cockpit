@@ -14,6 +14,8 @@ export const Application = () => {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [process, setProcess] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+  const [toolRequest, setToolRequest] = useState(null);
   const outputRef = useRef(null);
 
   useEffect(() => {
@@ -28,11 +30,21 @@ export const Application = () => {
 
     let stdoutBuffer = '';
     const handleMessage = (msg) => {
-      // Only display the content from 'chunk' messages for a clean UI.
-      if (msg.msg_type === 'chunk') {
+      if (msg.msg_type === 'ready') {
+        setIsReady(true);
+      } else if (msg.msg_type === 'chunk') {
         setOutput(prev => prev + msg.content);
+      } else if (msg.msg_type === 'confirm-tool-run') {
+        setOutput(prev => prev + `\n[TOOL]: ${msg.content}\n`);
+        setToolRequest(msg.content);
+      } else if (msg.msg_type === 'tool-result-ok') {
+        setOutput(prev => prev + `[TOOL OK]: ${msg.content}\n`);
+      } else if (msg.msg_type === 'tool-result-failed') {
+        setOutput(prev => prev + `[TOOL FAILED]: ${msg.content}\n`);
+      } else if (msg.msg_type === 'tool-result-canceled') {
+        setOutput(prev => prev + `[TOOL CANCELED]: ${msg.content}\n`);
       }
-      // Other message types like 'ready' are received but not shown.
+      // Other message types are received but not shown.
     };
 
     // This single stream handler processes stdout, which carries the JSON messages.
@@ -69,7 +81,7 @@ export const Application = () => {
 
   const sendMessage = () => {
     // Ensure there is input to send and the process is running
-    if (!input.trim() || !process) return;
+    if (!input.trim() || !process || !isReady) return;
 
     const userInput = input.trim();
 
@@ -85,14 +97,27 @@ export const Application = () => {
     setOutput(prev => prev + `\n> ${userInput}\n`);
 
     // Write the JSON message to the process's standard input (stdin)
-    process.input(jsonMsg);
+    process.input(jsonMsg, true);
     setInput('');
+    setIsReady(false);
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const handleToolResponse = (allow) => {
+    if (process && toolRequest) {
+      const msgType = allow ? 'allow-tool-run' : 'deny-tool-run';
+      const msg = { msg_type: msgType, content: '' };
+      const jsonMsg = JSON.stringify(msg) + '\n';
+
+      process.input(jsonMsg, true);
+      setOutput(prev => prev + `[${allow ? 'ALLOWED' : 'DENIED'}] Tool execution\n`);
+      setToolRequest(null);
     }
   };
 
@@ -112,10 +137,25 @@ export const Application = () => {
             />
           </FlexItem>
           <FlexItem>
-            <Button onClick={sendMessage} disabled={!process}>{_("Send")}</Button>
+            <Button onClick={sendMessage} disabled={!process || !isReady}>{_("Send")}</Button>
           </FlexItem>
         </Flex>
       </StackItem>
+      {toolRequest && (
+        <StackItem>
+          <Flex>
+            <FlexItem>
+              <span>{_("Allow tool execution?")}</span>
+            </FlexItem>
+            <FlexItem>
+              <Button variant="primary" onClick={() => handleToolResponse(true)}>{_("Yes")}</Button>
+            </FlexItem>
+            <FlexItem>
+              <Button variant="secondary" onClick={() => handleToolResponse(false)}>{_("No")}</Button>
+            </FlexItem>
+          </Flex>
+        </StackItem>
+      )}
       <StackItem isFilled>
         <TextArea
           ref={outputRef}
