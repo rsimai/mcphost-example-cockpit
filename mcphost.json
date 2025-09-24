@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "type": "builtin",
+      "name": "fs",
+      "options": {
+        "allowed_directories": ["${env://PWD:-/home/robert/mcp}"]
+      },
+      "allowedTools": ["read_file", "list_directory"]
+    }
+  }
+}
