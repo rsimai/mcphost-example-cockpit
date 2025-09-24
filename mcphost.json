@@ -4,9 +4,9 @@
       "type": "builtin",
       "name": "fs",
       "options": {
-        "allowed_directories": ["${env://PWD:-/home/robert/mcp}"]
+        "allowed_directories": ["${env://PWD:-/home/robert/mcp}","/tmp"]
       },
-      "allowedTools": ["read_file", "list_directory"]
+      "allowedTools": ["read_file", "write_file", "list_directory"]
     }
   }
 }

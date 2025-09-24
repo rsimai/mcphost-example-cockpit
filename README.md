@@ -1,3 +1,4 @@
 # Checking how to connect Cockpit to mcphost as a frontend
 
-Don't expect this to be functional, it's to explore.
+Basic functionality, connects to the backend through pipes and keeps them
+alive. Will ask for yes/no before allowing tools activity.
