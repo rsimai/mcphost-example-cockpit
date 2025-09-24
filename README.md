@@ -4,6 +4,7 @@
 
 Basic functionality:
 
+* requires local ollama with a supported model (qwen2.5:3b hardcoded)
 * connects to the backend through pipes and keeps them alive
 * yes/no buttons appear for tools activity
 * optionally logs to /tmp/mcp-go-debug.log
