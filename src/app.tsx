@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Title } from "@patternfly/react-core/dist/esm/components/Title/index.js";
 import { TextInput } from "@patternfly/react-core/dist/esm/components/TextInput/index.js";
 import { Button } from "@patternfly/react-core/dist/esm/components/Button/index.js";
+import { Card } from "@patternfly/react-core/dist/esm/components/Card/index.js";
 import { TextArea } from "@patternfly/react-core/dist/esm/components/TextArea/index.js";
 import { Flex, FlexItem } from "@patternfly/react-core/dist/esm/layouts/Flex/index.js";
 import { Stack, StackItem } from "@patternfly/react-core/dist/esm/layouts/Stack/index.js";
+import { Switch } from "@patternfly/react-core/dist/esm/components/Switch/index.js"; // ADDED
 
 import cockpit from 'cockpit';
 
@@ -16,11 +18,21 @@ export const Application = () => {
   const [process, setProcess] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [toolRequest, setToolRequest] = useState(null);
+  const [isDebug, setIsDebug] = useState(false); // ADDED
   const outputRef = useRef(null);
 
   useEffect(() => {
+    // Clear output and reset ready state when debug state changes or component mounts
+    setOutput('');
+    setIsReady(false);
+
+    const spawnArgs = ['./main', '--model', 'ollama:qwen2.5:3b']; // Changed model name
+    if (isDebug) {
+      spawnArgs.push('-debug', '-log-file', '/tmp/mcp-go-debug.log');
+    }
+
     const proc = cockpit.spawn(
-      ['./main', '--model', 'ollama:qwen2.5:3b','-debug','-log-file','/tmp/mcp-go-debug.log'],
+      spawnArgs,
       {
         directory: '/home/robert/git/mcphost-example-cockpit',
         err: 'ignore' // Ignore stderr, as we can only have one stream handler.
@@ -30,8 +42,10 @@ export const Application = () => {
 
     let stdoutBuffer = '';
     const handleMessage = (msg) => {
+      console.log("Frontend received message:", msg);
       if (msg.msg_type === 'ready') {
         setIsReady(true);
+        console.log("ready received")
       } else if (msg.msg_type === 'chunk') {
         setOutput(prev => prev + msg.content);
       } else if (msg.msg_type === 'confirm-tool-run') {
@@ -70,7 +84,7 @@ export const Application = () => {
     return () => {
       proc.close();
     };
-  }, []); // The empty dependency array ensures this effect runs only once
+  }, [isDebug]); // ADDED isDebug as dependency
 
   // Auto-scroll effect for the output area
   useEffect(() => {
@@ -137,25 +151,50 @@ export const Application = () => {
             />
           </FlexItem>
           <FlexItem>
-            <Button onClick={sendMessage} disabled={!process || !isReady}>{_("Send")}</Button>
+            <Button
+              onClick={sendMessage}
+              disabled={!process || !isReady}
+              style={{
+                ...(
+                  (!process || !isReady) &&
+                    { backgroundColor: 'lightgrey', color: 'darkgrey', cursor: 'not-allowed' }
+                )
+              }}
+            >
+              {_("Send")}
+            </Button>
           </FlexItem>
         </Flex>
       </StackItem>
-      {toolRequest && (
-        <StackItem>
-          <Flex>
+      <StackItem>
+        <Card style={{ minHeight: '58px', padding: '10px' }}>
+          <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
             <FlexItem>
-              <span>{_("Allow tool execution?")}</span>
+              <div style={{ visibility: toolRequest ? 'visible' : 'hidden' }}>
+                <Flex>
+                  <FlexItem>
+                    <span>{_("Allow tool execution?")}</span>
+                  </FlexItem>
+                  <FlexItem>
+                    <Button variant="primary" onClick={() => handleToolResponse(true)}>{_("Yes")}</Button>
+                  </FlexItem>
+                  <FlexItem>
+                    <Button variant="secondary" onClick={() => handleToolResponse(false)}>{_("No")}</Button>
+                  </FlexItem>
+                </Flex>
+              </div>
             </FlexItem>
             <FlexItem>
-              <Button variant="primary" onClick={() => handleToolResponse(true)}>{_("Yes")}</Button>
-            </FlexItem>
-            <FlexItem>
-              <Button variant="secondary" onClick={() => handleToolResponse(false)}>{_("No")}</Button>
+              <Switch
+                id="debug-switch"
+                label={_("Enable Debug Logging")}
+                isChecked={isDebug}
+                onChange={(_, checked) => setIsDebug(checked)}
+              />
             </FlexItem>
           </Flex>
-        </StackItem>
-      )}
+        </Card>
+      </StackItem>
       <StackItem isFilled>
         <TextArea
           ref={outputRef}
