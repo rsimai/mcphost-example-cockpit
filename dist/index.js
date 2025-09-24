@@ -28740,31 +28740,21 @@
     const [input, setInput] = (0, import_react2.useState)("");
     const [output, setOutput] = (0, import_react2.useState)("");
     const [process2, setProcess] = (0, import_react2.useState)(null);
-    const [isReady, setIsReady] = (0, import_react2.useState)(false);
-    const [toolRequest, setToolRequest] = (0, import_react2.useState)(null);
     const outputRef = (0, import_react2.useRef)(null);
     (0, import_react2.useEffect)(() => {
-      const proc = cockpit_default.spawn(["./main", "--model", "ollama:qwen2.5:3b", "--debug", "--log-file", "/tmp/mcp-go-debug.log"], {
-        directory: "/home/robert/git/mcphost-example-cockpit",
-        err: "message"
-      });
+      const proc = cockpit_default.spawn(
+        ["./main", "--model", "ollama:qwen2.5:3b", "-debug", "-log-file", "/tmp/mcp-go-debug.log"],
+        {
+          directory: "/home/robert/git/mcphost-example-cockpit",
+          err: "ignore"
+          // Ignore stderr, as we can only have one stream handler.
+        }
+      );
+      setProcess(proc);
       let stdoutBuffer = "";
-      let stderrBuffer = "";
-      let readyCount = 0;
       const handleMessage = (msg) => {
-        if (msg.msg_type === "ready") {
-          setIsReady(true);
-        } else if (msg.msg_type === "chunk") {
+        if (msg.msg_type === "chunk") {
           setOutput((prev) => prev + msg.content);
-        } else if (msg.msg_type === "confirm-tool-run") {
-          setOutput((prev) => prev + "\n[TOOL REQUEST] " + msg.content + "\n");
-          setToolRequest(msg.content);
-        } else if (msg.msg_type === "tool-result-ok") {
-          setOutput((prev) => prev + "[TOOL OK] " + msg.content + "\n");
-        } else if (msg.msg_type === "tool-result-failed") {
-          setOutput((prev) => prev + "[TOOL FAILED] " + msg.content + "\n");
-        } else if (msg.msg_type === "tool-result-canceled") {
-          setOutput((prev) => prev + "[TOOL CANCELED] " + msg.content + "\n");
         }
       };
       proc.stream((data) => {
@@ -28777,52 +28767,13 @@
               const msg = JSON.parse(line);
               handleMessage(msg);
             } catch (e) {
+              console.warn("Received non-JSON stdout line:", line);
             }
           }
         });
       });
-      proc.stream((data) => {
-        stderrBuffer += data;
-        const lines = stderrBuffer.split("\n");
-        stderrBuffer = lines.pop() || "";
-        lines.forEach((line) => {
-          if (line.trim()) {
-            try {
-              const msg = JSON.parse(line);
-              handleMessage(msg);
-            } catch (e) {
-            }
-          }
-        });
-      }, "err");
-      proc.fail(() => {
-        setIsReady(false);
-      });
-      proc.done(() => {
-        setIsReady(false);
-      });
-      const handleBeforeUnload = () => {
-        if (proc) {
-          try {
-            const quitMsg = JSON.stringify({ msg_type: "quit", content: "" }) + "\n";
-            proc.input(quitMsg, false);
-          } catch (e) {
-          }
-          proc.close();
-        }
-      };
-      window.addEventListener("beforeunload", handleBeforeUnload);
-      setProcess(proc);
       return () => {
-        window.removeEventListener("beforeunload", handleBeforeUnload);
-        if (proc) {
-          try {
-            const quitMsg = JSON.stringify({ msg_type: "quit", content: "" }) + "\n";
-            proc.input(quitMsg, false);
-          } catch (e) {
-          }
-          proc.close();
-        }
+        proc.close();
       };
     }, []);
     (0, import_react2.useEffect)(() => {
@@ -28831,27 +28782,23 @@
       }
     }, [output]);
     const sendMessage = () => {
-      if (input.trim() && process2 && isReady) {
-        const msg = { msg_type: "prompt", content: input.trim() };
-        const jsonMsg = JSON.stringify(msg) + "\n";
-        setOutput((prev) => prev + "\n> " + input.trim() + "\n");
-        process2.input(jsonMsg, false);
-        setInput("");
-        setIsReady(false);
-      }
+      if (!input.trim() || !process2) return;
+      const userInput = input.trim();
+      const msg = {
+        msg_type: "prompt",
+        content: userInput
+      };
+      const jsonMsg = JSON.stringify(msg) + "\n";
+      setOutput((prev) => prev + `
+> ${userInput}
+`);
+      process2.input(jsonMsg);
+      setInput("");
     };
     const handleKeyPress = (e) => {
       if (e.key === "Enter") {
+        e.preventDefault();
         sendMessage();
-      }
-    };
-    const handleToolResponse = (allow) => {
-      if (process2 && toolRequest) {
-        const msgType = allow ? "allow-tool-run" : "deny-tool-run";
-        const msg = JSON.stringify({ msg_type: msgType, content: "" }) + "\n";
-        process2.input(msg, false);
-        setOutput((prev) => prev + "[" + (allow ? "ALLOWED" : "DENIED") + "] Tool execution\n");
-        setToolRequest(null);
       }
     };
     return /* @__PURE__ */ import_react2.default.createElement(Stack, { hasGutter: true }, /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Title, { headingLevel: "h1" }, _("Local MCP"))), /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, { grow: { default: "grow" } }, /* @__PURE__ */ import_react2.default.createElement(
@@ -28862,7 +28809,7 @@
         onKeyPress: handleKeyPress,
         placeholder: _("Enter your message...")
       }
-    )), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { onClick: sendMessage, isDisabled: !isReady }, _("Send"))))), toolRequest && /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("span", null, _("Allow tool execution?"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "primary", onClick: () => handleToolResponse(true) }, _("Yes"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "secondary", onClick: () => handleToolResponse(false) }, _("No"))))), /* @__PURE__ */ import_react2.default.createElement(StackItem, { isFilled: true }, /* @__PURE__ */ import_react2.default.createElement(
+    )), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { onClick: sendMessage, disabled: !process2 }, _("Send"))))), /* @__PURE__ */ import_react2.default.createElement(StackItem, { isFilled: true }, /* @__PURE__ */ import_react2.default.createElement(
       TextArea,
       {
         ref: outputRef,
