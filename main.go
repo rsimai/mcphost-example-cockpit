@@ -33,6 +33,7 @@ const (
 	msgTypeResultOK       = "tool-result-ok"       // inform remote that the tool ran okay
 	msgTypeResultFailed   = "tool-result-failed"   // inform remote that the tool run failed
 	msgTypeResultCanceled = "tool-result-canceled" // inform remote that the tool call was canceled
+	msgTypeError          = "error"                // inform remote that an error occurred
 )
 
 type Message struct {
@@ -57,6 +58,8 @@ func recvMessage(scanner *bufio.Scanner) (Message, error) {
 	err := json.Unmarshal(b, &msg)
 	if err == nil {
 		slog.Debug("received from stdin", "Message", msg)
+	} else {
+		slog.Warn("failed to decode json", "bytes", b)
 	}
 	return msg, err
 }
@@ -137,7 +140,10 @@ func chatLoop(ctx context.Context, host *sdk.MCPHost) error {
 		case msgTypePrompt:
 			err = handlePrompt(ctx, msg.Content, host, scanner)
 			if err != nil {
-				return err
+				err := sendMessage(os.Stdout, Message{MsgType: msgTypeError, Content: err.Error()})
+				if err != nil {
+					return err
+				}
 			}
 		default:
 			slog.Warn("expected prompt or quit, got", "MsgType", msg.MsgType)
@@ -198,8 +204,9 @@ func handlePrompt(ctx context.Context, prompt string, host *sdk.MCPHost, scanner
 				slog.Error("onStreaming: sending message", "err", err)
 			}
 		})
-	if err != nil && !promptCanceled {
-		return err
+	// don't treat user cancellation of tool call as an error
+	if promptCanceled {
+		return nil
 	}
-	return nil
+	return err
 }

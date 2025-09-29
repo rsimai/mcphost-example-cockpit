@@ -28975,6 +28975,9 @@
         } else if (msg.msg_type === "tool-result-canceled") {
           setOutput((prev) => prev + `[TOOL CANCELED]: ${msg.content}
 `);
+        } else if (msg.msg_type === "error") {
+          setOutput((prev) => prev + `[ERROR]: ${msg.content}
+`);
         }
       };
       proc.stream((data) => {

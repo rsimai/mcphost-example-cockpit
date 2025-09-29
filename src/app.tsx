@@ -57,6 +57,8 @@ export const Application = () => {
         setOutput(prev => prev + `[TOOL FAILED]: ${msg.content}\n`);
       } else if (msg.msg_type === 'tool-result-canceled') {
         setOutput(prev => prev + `[TOOL CANCELED]: ${msg.content}\n`);
+      } else if (msg.msg_type === 'error') {
+	setOutput(prev => prev + `[ERROR]: ${msg.content}\n`);
       }
       // Other message types are received but not shown.
     };

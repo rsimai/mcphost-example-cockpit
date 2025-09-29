@@ -7,6 +7,21 @@
         "allowed_directories": ["${env://PWD:-/home/robert/mcp}","/tmp"]
       },
       "allowedTools": ["read_file", "write_file", "list_directory"]
-    }
-  }
+    },
+    "bash-commands": {
+      "type": "builtin",
+      "name": "bash"
+    },
+    "web-fetcher": {
+      "type": "builtin",
+      "name": "http"
+    },
+    "systemd": {  
+      "type": "local",  
+      "command": ["mcp-server-systemd"],  
+      "environment": {  
+        "ENV_VAR": ""  
+      }
+    }  
+  }  
 }
