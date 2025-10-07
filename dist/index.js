@@ -28942,19 +28942,19 @@
     (0, import_react2.useEffect)(() => {
       const fetchModels = async () => {
         try {
-          const proc = cockpit_default.spawn(["ollama", "list"], { err: "ignore" });
-          let output2 = "";
-          proc.stream((data) => {
-            output2 += data;
-          });
-          await proc;
-          const models = output2.split("\n").slice(1).filter((line) => line.trim()).map((line) => line.split(/\s+/)[0]).filter((name) => name && !name.includes("NAME"));
+          console.log("Fetching models from ollama...");
+          const client = cockpit_default.http("11434");
+          const response = await client.get("/api/tags");
+          const data = JSON.parse(response);
+          const models = data.models.map((model) => model.name);
+          console.log("Extracted models:", models);
           setAvailableModels(models);
           if (models.length > 0 && !models.includes(selectedModel)) {
             setSelectedModel(models[0]);
           }
         } catch (e) {
-          setAvailableModels(["qwen2.5:3b"]);
+          console.error("Error fetching models:", e);
+          setAvailableModels([]);
         }
       };
       fetchModels();
