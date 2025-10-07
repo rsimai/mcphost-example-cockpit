@@ -6,7 +6,7 @@ import { Card } from "@patternfly/react-core/dist/esm/components/Card/index.js";
 import { TextArea } from "@patternfly/react-core/dist/esm/components/TextArea/index.js";
 import { Flex, FlexItem } from "@patternfly/react-core/dist/esm/layouts/Flex/index.js";
 import { Stack, StackItem } from "@patternfly/react-core/dist/esm/layouts/Stack/index.js";
-import { Switch } from "@patternfly/react-core/dist/esm/components/Switch/index.js"; // ADDED
+import { Switch } from "@patternfly/react-core/dist/esm/components/Switch/index.js";
 
 import cockpit from 'cockpit';
 
@@ -18,15 +18,42 @@ export const Application = () => {
   const [process, setProcess] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [toolRequest, setToolRequest] = useState(null);
-  const [isDebug, setIsDebug] = useState(false); // ADDED
+  const [isDebug, setIsDebug] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('qwen2.5:3b');
+  const [availableModels, setAvailableModels] = useState([]);
   const outputRef = useRef(null);
 
   useEffect(() => {
-    // Clear output and reset ready state when debug state changes or component mounts
+    const fetchModels = async () => {
+      try {
+        const proc = cockpit.spawn(['ollama', 'list'], { err: 'ignore' });
+        let output = '';
+        proc.stream(data => { output += data; });
+        await proc;
+        
+        const models = output.split('\n')
+          .slice(1)
+          .filter(line => line.trim())
+          .map(line => line.split(/\s+/)[0])
+          .filter(name => name && !name.includes('NAME'));
+        
+        setAvailableModels(models);
+        if (models.length > 0 && !models.includes(selectedModel)) {
+          setSelectedModel(models[0]);
+        }
+      } catch (e) {
+        setAvailableModels(['qwen2.5:3b']);
+      }
+    };
+    
+    fetchModels();
+  }, []);
+
+  useEffect(() => {
     setOutput('');
     setIsReady(false);
 
-    const spawnArgs = ['./main', '--model', 'ollama:qwen2.5:3b']; // Changed model name
+    const spawnArgs = ['./main', '--model', `ollama:${selectedModel}`];
     if (isDebug) {
       spawnArgs.push('-debug', '-log-file', '/tmp/mcp-go-debug.log');
     }
@@ -86,7 +113,7 @@ export const Application = () => {
     return () => {
       proc.close();
     };
-  }, [isDebug]); // ADDED isDebug as dependency
+  }, [isDebug, selectedModel]);
 
   // Auto-scroll effect for the output area
   useEffect(() => {
@@ -185,6 +212,19 @@ export const Application = () => {
                   </FlexItem>
                 </Flex>
               </div>
+            </FlexItem>
+            <FlexItem>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                style={{ width: '200px', padding: '6px', fontSize: '14px' }}
+              >
+                {availableModels.map(model => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+              </select>
             </FlexItem>
             <FlexItem>
               <Switch

@@ -28936,11 +28936,33 @@
     const [isReady, setIsReady] = (0, import_react2.useState)(false);
     const [toolRequest, setToolRequest] = (0, import_react2.useState)(null);
     const [isDebug, setIsDebug] = (0, import_react2.useState)(false);
+    const [selectedModel, setSelectedModel] = (0, import_react2.useState)("qwen2.5:3b");
+    const [availableModels, setAvailableModels] = (0, import_react2.useState)([]);
     const outputRef = (0, import_react2.useRef)(null);
+    (0, import_react2.useEffect)(() => {
+      const fetchModels = async () => {
+        try {
+          const proc = cockpit_default.spawn(["ollama", "list"], { err: "ignore" });
+          let output2 = "";
+          proc.stream((data) => {
+            output2 += data;
+          });
+          await proc;
+          const models = output2.split("\n").slice(1).filter((line) => line.trim()).map((line) => line.split(/\s+/)[0]).filter((name) => name && !name.includes("NAME"));
+          setAvailableModels(models);
+          if (models.length > 0 && !models.includes(selectedModel)) {
+            setSelectedModel(models[0]);
+          }
+        } catch (e) {
+          setAvailableModels(["qwen2.5:3b"]);
+        }
+      };
+      fetchModels();
+    }, []);
     (0, import_react2.useEffect)(() => {
       setOutput("");
       setIsReady(false);
-      const spawnArgs = ["./main", "--model", "ollama:qwen2.5:3b"];
+      const spawnArgs = ["./main", "--model", `ollama:${selectedModel}`];
       if (isDebug) {
         spawnArgs.push("-debug", "-log-file", "/tmp/mcp-go-debug.log");
       }
@@ -28998,7 +29020,7 @@
       return () => {
         proc.close();
       };
-    }, [isDebug]);
+    }, [isDebug, selectedModel]);
     (0, import_react2.useEffect)(() => {
       if (outputRef.current) {
         outputRef.current.scrollTop = outputRef.current.scrollHeight;
@@ -29055,6 +29077,14 @@
       },
       _("Send")
     )))), /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Card, { style: { minHeight: "58px", padding: "10px" } }, /* @__PURE__ */ import_react2.default.createElement(Flex, { justifyContent: { default: "justifyContentSpaceBetween" }, alignItems: { default: "alignItemsCenter" } }, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("div", { style: { visibility: toolRequest ? "visible" : "hidden" } }, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("span", null, _("Allow tool execution?"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "primary", onClick: () => handleToolResponse(true) }, _("Yes"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "secondary", onClick: () => handleToolResponse(false) }, _("No")))))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(
+      "select",
+      {
+        value: selectedModel,
+        onChange: (e) => setSelectedModel(e.target.value),
+        style: { width: "200px", padding: "6px", fontSize: "14px" }
+      },
+      availableModels.map((model) => /* @__PURE__ */ import_react2.default.createElement("option", { key: model, value: model }, model))
+    )), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(
       Switch,
       {
         id: "debug-switch",
