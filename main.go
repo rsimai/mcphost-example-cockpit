@@ -10,16 +10,18 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/mark3labs/mcphost/sdk"
 )
 
 var (
-	model        = flag.String("model", "", "Model to use, e.g. ollama:qwen2.5:3b")
-	configFile   = flag.String("config-file", "mcphost.json", "Path to mcphost configuration")
-	systemPrompt = flag.String("system-prompt", "", "Set the system prompt. Defaults to the model's if not set")
-	debug        = flag.Bool("debug", false, "Enable debug logging")
-	logFile      = flag.String("log-file", "", "Write logs to this file. Will be truncated. Defaults to stderr if not set")
+	model         = flag.String("model", "", "Model to use, e.g. ollama:qwen2.5:3b")
+	configFile    = flag.String("config-file", "mcphost.json", "Path to mcphost configuration")
+	systemPrompt  = flag.String("system-prompt", "", "Set the system prompt. Defaults to the model's if not set")
+	debug         = flag.Bool("debug", false, "Enable debug logging")
+	logFile       = flag.String("log-file", "", "Write logs to this file. Will be truncated. Defaults to stderr if not set")
+	promptTimeout = flag.Duration("prompt-timeout", 2*time.Minute, "Maximum time to wait for the prompt to complete")
 )
 
 const (
@@ -153,7 +155,9 @@ func chatLoop(ctx context.Context, host *sdk.MCPHost) error {
 
 func handlePrompt(ctx context.Context, prompt string, host *sdk.MCPHost, scanner *bufio.Scanner) error {
 	promptCanceled := false
-	promptCtx, cancelPrompt := context.WithCancel(ctx)
+	promptCtx, cancelPrompt := context.WithTimeoutCause(ctx, *promptTimeout,
+		fmt.Errorf("timeout: prompt failed to complete within %v", promptTimeout))
+	defer cancelPrompt()
 
 	_, err := host.PromptWithCallbacks(
 		promptCtx,
