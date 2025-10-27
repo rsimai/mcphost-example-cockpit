@@ -19,5 +19,6 @@
         "ENV_VAR": ""  
       }
     }  
-  }  
+  },
+  "provider-url": "http://localhost:11434"  
 }
