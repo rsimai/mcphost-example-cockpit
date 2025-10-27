@@ -50,7 +50,7 @@ export const Application = () => {
     setOutput('');
     setIsReady(false);
 
-    const spawnArgs = ['./main', '--model', `ollama:${selectedModel}`];
+    const spawnArgs = ['./main', '-prompt-timeout', '5m0s', '--model', `ollama:${selectedModel}`];
     if (isDebug) {
       spawnArgs.push('-debug', '-log-file', '/tmp/mcp-go-debug.log');
     }
@@ -166,31 +166,14 @@ export const Application = () => {
       <StackItem>
         <Title headingLevel="h1">{_("Local MCP")}</Title>
       </StackItem>
-      <StackItem>
-        <Flex>
-          <FlexItem grow={{ default: 'grow' }}>
-            <TextInput
-              value={input}
-              onChange={(_, value) => setInput(value)}
-              onKeyPress={handleKeyPress}
-              placeholder={_("Enter your message...")}
-            />
-          </FlexItem>
-          <FlexItem>
-            <Button
-              onClick={sendMessage}
-              disabled={!process || !isReady}
-              style={{
-                ...(
-                  (!process || !isReady) &&
-                    { backgroundColor: 'lightgrey', color: 'darkgrey', cursor: 'not-allowed' }
-                )
-              }}
-            >
-              {_("Send")}
-            </Button>
-          </FlexItem>
-        </Flex>
+      <StackItem isFilled>
+        <TextArea
+          ref={outputRef}
+          value={output}
+          readOnly
+          style={{ fontFamily: 'monospace', height: 'calc(100vh - 200px)', minHeight: '400px' }}
+          placeholder={_("Output will appear here...")}
+        />
       </StackItem>
       <StackItem>
         <Card style={{ minHeight: '58px', padding: '10px' }}>
@@ -234,14 +217,31 @@ export const Application = () => {
           </Flex>
         </Card>
       </StackItem>
-      <StackItem isFilled>
-        <TextArea
-          ref={outputRef}
-          value={output}
-          readOnly
-          style={{ fontFamily: 'monospace', height: 'calc(100vh - 200px)', minHeight: '400px' }}
-          placeholder={_("Output will appear here...")}
-        />
+      <StackItem>
+        <Flex>
+          <FlexItem grow={{ default: 'grow' }}>
+            <TextInput
+              value={input}
+              onChange={(_, value) => setInput(value)}
+              onKeyPress={handleKeyPress}
+              placeholder={_("Enter your message...")}
+            />
+          </FlexItem>
+          <FlexItem>
+            <Button
+              onClick={sendMessage}
+              disabled={!process || !isReady}
+              style={{
+                ...(
+                  (!process || !isReady) &&
+                    { backgroundColor: 'lightgrey', color: 'darkgrey', cursor: 'not-allowed' }
+                )
+              }}
+            >
+              {_("Send")}
+            </Button>
+          </FlexItem>
+        </Flex>
       </StackItem>
     </Stack>
   );

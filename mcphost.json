@@ -12,10 +12,6 @@
       "type": "builtin",
       "name": "bash"
     },
-    "web-fetcher": {
-      "type": "builtin",
-      "name": "http"
-    },
     "systemd": {  
       "type": "local",  
       "command": ["mcp-server-systemd"],  

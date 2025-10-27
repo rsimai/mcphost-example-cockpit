@@ -28962,7 +28962,7 @@
     (0, import_react2.useEffect)(() => {
       setOutput("");
       setIsReady(false);
-      const spawnArgs = ["./main", "--model", `ollama:${selectedModel}`];
+      const spawnArgs = ["./main", "-prompt-timeout", "5m0s", "--model", `ollama:${selectedModel}`];
       if (isDebug) {
         spawnArgs.push("-debug", "-log-file", "/tmp/mcp-go-debug.log");
       }
@@ -29058,7 +29058,32 @@
         setToolRequest(null);
       }
     };
-    return /* @__PURE__ */ import_react2.default.createElement(Stack, { hasGutter: true }, /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Title, { headingLevel: "h1" }, _("Local MCP"))), /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, { grow: { default: "grow" } }, /* @__PURE__ */ import_react2.default.createElement(
+    return /* @__PURE__ */ import_react2.default.createElement(Stack, { hasGutter: true }, /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Title, { headingLevel: "h1" }, _("Local MCP"))), /* @__PURE__ */ import_react2.default.createElement(StackItem, { isFilled: true }, /* @__PURE__ */ import_react2.default.createElement(
+      TextArea,
+      {
+        ref: outputRef,
+        value: output,
+        readOnly: true,
+        style: { fontFamily: "monospace", height: "calc(100vh - 200px)", minHeight: "400px" },
+        placeholder: _("Output will appear here...")
+      }
+    )), /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Card, { style: { minHeight: "58px", padding: "10px" } }, /* @__PURE__ */ import_react2.default.createElement(Flex, { justifyContent: { default: "justifyContentSpaceBetween" }, alignItems: { default: "alignItemsCenter" } }, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("div", { style: { visibility: toolRequest ? "visible" : "hidden" } }, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("span", null, _("Allow tool execution?"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "primary", onClick: () => handleToolResponse(true) }, _("Yes"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "secondary", onClick: () => handleToolResponse(false) }, _("No")))))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(
+      "select",
+      {
+        value: selectedModel,
+        onChange: (e) => setSelectedModel(e.target.value),
+        style: { width: "200px", padding: "6px", fontSize: "14px" }
+      },
+      availableModels.map((model) => /* @__PURE__ */ import_react2.default.createElement("option", { key: model, value: model }, model))
+    )), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(
+      Switch,
+      {
+        id: "debug-switch",
+        label: _("Enable Debug Logging"),
+        isChecked: isDebug,
+        onChange: (_2, checked) => setIsDebug(checked)
+      }
+    ))))), /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, { grow: { default: "grow" } }, /* @__PURE__ */ import_react2.default.createElement(
       TextInput,
       {
         value: input,
@@ -29076,32 +29101,7 @@
         }
       },
       _("Send")
-    )))), /* @__PURE__ */ import_react2.default.createElement(StackItem, null, /* @__PURE__ */ import_react2.default.createElement(Card, { style: { minHeight: "58px", padding: "10px" } }, /* @__PURE__ */ import_react2.default.createElement(Flex, { justifyContent: { default: "justifyContentSpaceBetween" }, alignItems: { default: "alignItemsCenter" } }, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("div", { style: { visibility: toolRequest ? "visible" : "hidden" } }, /* @__PURE__ */ import_react2.default.createElement(Flex, null, /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement("span", null, _("Allow tool execution?"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "primary", onClick: () => handleToolResponse(true) }, _("Yes"))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(Button, { variant: "secondary", onClick: () => handleToolResponse(false) }, _("No")))))), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(
-      "select",
-      {
-        value: selectedModel,
-        onChange: (e) => setSelectedModel(e.target.value),
-        style: { width: "200px", padding: "6px", fontSize: "14px" }
-      },
-      availableModels.map((model) => /* @__PURE__ */ import_react2.default.createElement("option", { key: model, value: model }, model))
-    )), /* @__PURE__ */ import_react2.default.createElement(FlexItem, null, /* @__PURE__ */ import_react2.default.createElement(
-      Switch,
-      {
-        id: "debug-switch",
-        label: _("Enable Debug Logging"),
-        isChecked: isDebug,
-        onChange: (_2, checked) => setIsDebug(checked)
-      }
-    ))))), /* @__PURE__ */ import_react2.default.createElement(StackItem, { isFilled: true }, /* @__PURE__ */ import_react2.default.createElement(
-      TextArea,
-      {
-        ref: outputRef,
-        value: output,
-        readOnly: true,
-        style: { fontFamily: "monospace", height: "calc(100vh - 200px)", minHeight: "400px" },
-        placeholder: _("Output will appear here...")
-      }
-    )));
+    )))));
   };
 
   // src/index.tsx
